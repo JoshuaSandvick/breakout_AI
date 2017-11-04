@@ -6,10 +6,13 @@ def create_network(batch_size):
     num_hidden_layer_1_output_channels = 16
     num_hidden_layer_2_output_channels = 32
     num_fc_1_output_units = 256
-    num_output_actions = 2
+    num_output_actions = 4 # noop, left, right, fire
+
+    target = tf.placeholder(shape=[None], dtype=tf.float32)
+    
     
     # Input layer
-    input_layer = tf.placeholder(tf.float16, shape=(batch_size, 105, 80, num_frames_back_to_convolve))
+    input_layer = tf.placeholder(tf.float16, shape=(batch_size, 84, 84, num_frames_back_to_convolve))
     
     # First hidden layer
     hidden_layer_1 = tf.nn.convolution(input_layer, [8, 8, num_frames_back_to_convolve, num_hidden_layer_1_output_channels], padding="VALID", strides=[4, 4])

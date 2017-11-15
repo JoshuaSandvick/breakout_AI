@@ -9,7 +9,8 @@ class Q_Network:
         num_fc_1_output_units = 256
         num_output_actions = 4 # noop, left, right, fire
     
-        self.target = tf.placeholder(shape=[None], dtype=tf.float32)
+        self.targets = tf.placeholder(shape=[None], dtype=tf.float32)
+        self.actions = tf.placeholder(shape=[None], dtype=tf.float32)
         
         # Input layer
         self.input_layer = tf.placeholder(tf.float16, shape=(batch_size, 84, 84, num_frames_back_to_convolve))
@@ -34,3 +35,10 @@ class Q_Network:
         
         # Output layer
         self.output_layer = tf.layers.dense(self.fc_layer_1, units=num_output_actions)
+        
+        # Create loss
+        gather_indicies = tf.range(batch_size) * tf.shape(self.output_layer)[1] + self.actions
+        action_predictions = tf.gather(tf.reshape(self.output_layer, [-1]), gather_indicies)
+        
+        losses = tf.squared_difference(self.targets, action_predictions)
+        self.loss = tf.reduce_mean(losses)

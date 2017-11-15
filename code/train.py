@@ -41,19 +41,6 @@ def epsilon_greedy_policy(session, state, epsilon):
         action = np.argmax(q_values)
     return action
 
-def update(session, states, action, target):
-    """Updates the estimator towards the targets.
-
-    Args:
-        session: A Tensorflow session object.
-        states: State input of size [batch_size, 105, 80, 4] 
-        action: Chosen actions of shape [batch_size]
-        target: Targets of size [batch_size]
-    """
-    losses = tf.squared_difference(target, 
-    session.run(
-        tf.contrib.framework.get_global_step(), train_op, loss)
-
 # Initialize replay memory D to capacity N (=100)
 state = env.reset()
 replay_memory = []

@@ -11,7 +11,7 @@ num_epochs = 1000
 num_examples = 100000
 epsilon = .15
 
-net = na.create_network(batch_size)
+net = na.Q_Network(batch_size)
 
 """ Train the network """
 init = tf.global_variables_initializer()
@@ -97,7 +97,7 @@ for i in range(0, num_epochs):
         states, action, reward, next_states, done = map(np.array, *minibatch)
 
         # Compute the q values and targets
-        q_values_next = session.run([net], {input_layer:next_states})
+        q_values_next = session.run([net.output_layer], {net.input_layer:next_states})
         targets = reward + np.invert(done).astype(np.float32) * .99 * np.amax(q_values_next, axis=1) 
 
         # Compute loss and perform gradient descent update

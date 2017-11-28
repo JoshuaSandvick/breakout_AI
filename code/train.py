@@ -4,6 +4,7 @@ import random
 import network_architecture as na
 import gym
 import preprocessing 
+import itertools
 
 """ Set up network architecture """
 # Training parameters
@@ -69,12 +70,13 @@ for i in range(0, num_epochs):
     state = sp.process(session, state)
     state = np.stack([state]*4, axis=2) # phi fn
     r = 0
-    for j in range(0, num_examples, batch_size): 
+    for j in itertools.count(): 
         # Perform an action in emulator
         action = epsilon_greedy_policy(session, [state], epsilon)
         next_state, reward, done, _ = env.step(action)
         next_state = sp.process(session, next_state)
         next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2) # phi
+        r += reward
 
         # Update replay memory
         if len(replay_memory) > replay_memory_size:
@@ -83,14 +85,16 @@ for i in range(0, num_epochs):
 
         # Sample random minibatch from replay memory 
         minibatch = random.sample(replay_memory, batch_size)
-        states, action, reward, next_states, done = map(np.array, zip(*minibatch))
+        states, actions, rewards, next_states, dones = map(np.array, zip(*minibatch))
 
         # Compute the q values and targets
         q_values_next = session.run([net.output_layer], {net.input_layer:next_states})
-        targets = reward + np.invert(done).astype(np.float32) * .99 * np.amax(q_values_next, axis=1) 
-        r += sum(reward)
+        targets = rewards + np.invert(dones).astype(np.float32) * .99 * np.amax(q_values_next, axis=1) 
 
         # Compute loss and perform gradient descent update
-        _, loss = session.run([net.train_step, net.loss], {net.targets:targets[0], net.actions:action, net.input_layer:states})
-    print("Epoch {}: loss={}, reward={}".format(i, loss, r / num_examples))
+        _, loss = session.run([net.train_step, net.loss], {net.targets:targets[0], net.actions:actions, net.input_layer:states})
+        if done:
+            break
+        state = next_state
+    print("Epoch {}: loss={}, reward={}".format(i, loss, r))
 

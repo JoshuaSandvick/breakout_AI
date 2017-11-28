@@ -92,5 +92,5 @@ for i in range(0, num_epochs):
 
         # Compute loss and perform gradient descent update
         _, loss = session.run([net.train_step, net.loss], {net.targets:targets[0], net.actions:action, net.input_layer:states})
-    print("Epoch {}: loss={}, reward={}".format(i, loss, r))
+    print("Epoch {}: loss={}, reward={}".format(i, loss, r / num_examples))
 

@@ -9,9 +9,8 @@ import itertools
 """ Set up network architecture """
 # Training parameters
 batch_size = 4 #32
-num_epochs = 1000
-num_examples = 100000
-epsilon = .15
+num_epochs = 100000
+epsilon = np.linspace(1,0,num_epochs)
 
 net = na.Q_Network(batch_size)
 
@@ -43,17 +42,17 @@ def epsilon_greedy_policy(session, state, epsilon):
         action = np.argmax(q_values)
     return action
 
-# Initialize replay memory D to capacity N (=100)
+# Initialize replay memory D 
 state = env.reset()
 replay_memory = []
-replay_memory_size = 1000
-replay_memory_init_size = 100
+replay_memory_size = 500000 
+replay_memory_init_size = 50000
 
 state = sp.process(session, state)
 state = np.stack([state]*4, axis=2)
 for i in range(replay_memory_size):
     # TODO should probably vary epsilon as we get better target values 
-    action = epsilon_greedy_policy(session, [state], epsilon)
+    action = epsilon_greedy_policy(session, [state], epsilon[0])
     next_state, reward, done, _ = env.step(action) 
     next_state = sp.process(session, next_state)
     next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2)
@@ -72,7 +71,7 @@ for i in range(0, num_epochs):
     r = 0
     for j in itertools.count(): 
         # Perform an action in emulator
-        action = epsilon_greedy_policy(session, [state], epsilon)
+        action = epsilon_greedy_policy(session, [state], epsilon[i])
         next_state, reward, done, _ = env.step(action)
         next_state = sp.process(session, next_state)
         next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2) # phi
@@ -86,13 +85,14 @@ for i in range(0, num_epochs):
         # Sample random minibatch from replay memory 
         minibatch = random.sample(replay_memory, batch_size)
         states, actions, rewards, next_states, dones = map(np.array, zip(*minibatch))
+        print(states.shape)
 
         # Compute the q values and targets
-        q_values_next = session.run([net.output_layer], {net.input_layer:next_states})
+        q_values_next = session.run(net.output_layer, {net.input_layer:next_states})
         targets = rewards + np.invert(dones).astype(np.float32) * .99 * np.amax(q_values_next, axis=1) 
 
         # Compute loss and perform gradient descent update
-        _, loss = session.run([net.train_step, net.loss], {net.targets:targets[0], net.actions:actions, net.input_layer:states})
+        _, loss = session.run([net.train_step, net.loss], {net.targets:targets, net.actions:actions, net.input_layer:states})
         if done:
             break
         state = next_state

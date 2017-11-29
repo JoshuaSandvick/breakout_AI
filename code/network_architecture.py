@@ -21,15 +21,15 @@ class Q_Network:
         # First hidden layer
         filter_1 = tf.Variable(tf.random_normal([8, 8, num_frames_back_to_convolve, num_hidden_layer_1_output_channels], dtype=tf.float32), dtype=tf.float32)
         h1 = tf.nn.conv2d(X, filter_1, padding="VALID", strides=[1, 4, 4, 1])
-        h1 = tf.nn.relu(h1)
-        self.hidden_layer_1 = tf.nn.max_pool(h1, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+        self.hidden_layer_1 = tf.nn.relu(h1)
+        #self.hidden_layer_1 = tf.nn.max_pool(h1, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
         
         # Second hidden layer
         filter_2 = tf.Variable(tf.random_normal([4, 4, num_hidden_layer_1_output_channels, num_hidden_layer_2_output_channels], dtype=tf.float32), dtype=tf.float32)
         h2 = tf.nn.conv2d(self.hidden_layer_1, filter_2, padding="VALID", strides=[1, 2, 2, 1])
-        h2 = tf.nn.relu(h2)
-        self.hidden_layer_2 = tf.nn.max_pool(h2, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
-        
+        self.hidden_layer_2 = tf.nn.relu(h2)
+        #self.hidden_layer_2 = tf.nn.max_pool(h2, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+
         # Flatten the hidden layer's output for the fully connected layer
         #flattened = tf.layers.flatten(self.hidden_layer_2)
         # Need magic # for weird bug w/ None type on -1 input

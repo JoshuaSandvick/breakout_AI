@@ -8,9 +8,9 @@ import itertools
 
 """ Set up network architecture """
 # Training parameters
-batch_size = 4 #32
-num_epochs = 100000
-epsilon = np.linspace(1,0,num_epochs)
+batch_size = 32
+num_epochs = 10000
+epsilon = np.linspace(1,.1,500000)
 
 net = na.Q_Network(batch_size)
 
@@ -50,8 +50,8 @@ replay_memory_init_size = 50000
 
 state = sp.process(session, state)
 state = np.stack([state]*4, axis=2)
-for i in range(replay_memory_size):
-    # TODO should probably vary epsilon as we get better target values 
+print("Populating replay memory")
+for i in range(replay_memory_init_size):
     action = epsilon_greedy_policy(session, [state], epsilon[0])
     next_state, reward, done, _ = env.step(action) 
     next_state = sp.process(session, next_state)
@@ -64,6 +64,7 @@ for i in range(replay_memory_size):
     else:
         state = next_state
     
+print("Starting episode training")
 for i in range(0, num_epochs):
     state = env.reset()
     state = sp.process(session, state)
@@ -85,7 +86,6 @@ for i in range(0, num_epochs):
         # Sample random minibatch from replay memory 
         minibatch = random.sample(replay_memory, batch_size)
         states, actions, rewards, next_states, dones = map(np.array, zip(*minibatch))
-        print(states.shape)
 
         # Compute the q values and targets
         q_values_next = session.run(net.output_layer, {net.input_layer:next_states})
@@ -96,5 +96,25 @@ for i in range(0, num_epochs):
         if done:
             break
         state = next_state
-    print("Epoch {}: loss={}, reward={}".format(i, loss, r))
+    if i % 1000 == 0:
+        print("Epoch {}: loss={}, reward={}".format(i, loss, r))
 
+print("Let our bot play!")
+total_reward_100_eps = 0
+for i in range(0, 100):
+    state = env.reset()
+    state = sp.process(session, state)
+    state = np.stack([state]*4, axis=2) # phi fn
+    r = 0
+    for j in itertools.count(): 
+        # Perform an action in emulator
+        action = epsilon_greedy_policy(session, [state], 0)
+        next_state, reward, done, _ = env.step(action)
+        next_state = sp.process(session, next_state)
+        next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2) # phi
+        r += reward
+        state = next_state
+        if done:
+            break
+    total_reward_100_eps += r
+print("100 Episode Performance {}".format(total_reward_100_eps))
